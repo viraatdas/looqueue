@@ -132,10 +132,16 @@ export default function WaitlistForm() {
   // Remove a user from the queue
   const removeUser = async (id: string) => {
     try {
-      const response = await fetch(`/api/user/${id}`, {
+      console.log("removeUser is ", id);
+
+      const response = await fetch('/api/user', {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),  
       });
+
       if (!response.ok) throw new Error('Failed to remove user');
+
       toast({
         title: 'User Removed',
         description: 'The user has been removed from the queue.',
@@ -143,7 +149,7 @@ export default function WaitlistForm() {
         duration: 3000,
         isClosable: true,
       });
-      fetchUsers();
+      fetchUsers(); // Refresh the list after removal
     } catch (error) {
       console.error('Error removing user:', error);
       toast({

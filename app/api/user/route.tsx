@@ -35,3 +35,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Error adding user' }, { status: 500 });
   }
 }
+
+// DELETE: Remove a user by ID
+export async function DELETE(request: Request) {
+  const { id } = await request.json();  // Extract ID from request body
+
+  if (!id) {
+    return NextResponse.json({ message: 'User ID is required' }, { status: 400 });
+  }
+
+  try {
+    const user = await User.findByIdAndDelete(id); // Find and delete the user by _id
+    if (!user) {
+      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    }
+    return NextResponse.json({ message: 'User deleted successfully' }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ message: 'Error deleting user' }, { status: 500 });
+  }
+}
