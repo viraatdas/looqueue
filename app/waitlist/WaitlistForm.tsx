@@ -21,6 +21,7 @@ type Activity = {
 };
 
 type User = {
+  _id: string; // MongoDB ID to handle removal
   name: string;
   status: string;
   activities: string[];
@@ -85,7 +86,6 @@ export default function WaitlistForm() {
       return;
     }
 
-
     if (users.some(user => user.name === name)) {
       toast({
         title: 'Error',
@@ -122,6 +122,62 @@ export default function WaitlistForm() {
       toast({
         title: 'Error',
         description: 'Failed to submit your information',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  // Remove a user from the queue
+  const removeUser = async (id: string) => {
+    try {
+      const response = await fetch(`/api/user/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to remove user');
+      toast({
+        title: 'User Removed',
+        description: 'The user has been removed from the queue.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error('Error removing user:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to remove the user',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  // Mark user as "Using"
+  const markAsUsing = async (id: string) => {
+    try {
+      const response = await fetch(`/api/user/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'using' }),
+      });
+      if (!response.ok) throw new Error('Failed to update user');
+      toast({
+        title: 'User Updated',
+        description: 'The user is now using the bathroom.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update the user',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -195,45 +251,63 @@ export default function WaitlistForm() {
               </Button>
             </VStack>
           </form>
-          <Box>
-  <Heading size="md" mb={4}>Current Queue</Heading>
-  {users.length === 0 ? (
-    <Text>No one is currently in the queue.</Text>
-  ) : (
-    <VStack align="stretch" spacing={4}>
-      {users
-        .sort((a, b) => b.urgency - a.urgency || a.timestamp - b.timestamp)
-        .map((user, index) => (
-          <Box
-            key={index}
-            p={4}
-            borderWidth={1}
-            borderRadius="md"
-            bg={user.urgency ? 'red.100' : 'gray.100'}
-            borderColor={user.urgency ? 'red.400' : 'gray.400'}
-            boxShadow="sm"
-          >
-            <Heading size="sm" color={user.urgency ? 'red.600' : 'gray.700'}>
-              {`${index + 1}. ${user.name}`}
-            </Heading>
-            <Text fontSize="sm">
-              <strong>Status:</strong> {user.status}
-            </Text>
-            <Text fontSize="sm">
-              <strong>Activities:</strong> {user.activities.join(', ')}
-            </Text>
-            <Text fontSize="sm">
-              <strong>Urgency:</strong> {user.urgency ? 'Yes' : 'No'}
-            </Text>
-            <Text fontSize="sm">
-              <strong>Estimated Wait Time:</strong> {calculateWaitTime(index)} mins
-            </Text>
-          </Box>
-        ))}
-    </VStack>
-  )}
-</Box>
 
+          {/* Current Queue Display */}
+          <Box>
+            <Heading size="md" mb={4}>Current Queue</Heading>
+            {users.length === 0 ? (
+              <Text>No one is currently in the queue.</Text>
+            ) : (
+              <VStack align="stretch" spacing={4}>
+                {users
+                  .sort((a, b) => b.urgency - a.urgency || a.timestamp - b.timestamp)
+                  .map((user, index) => (
+                    <Box
+                      key={user._id}
+                      p={4}
+                      borderWidth={1}
+                      borderRadius="md"
+                      bg={user.urgency ? 'red.100' : 'gray.100'}
+                      borderColor={user.urgency ? 'red.400' : 'gray.400'}
+                      boxShadow="sm"
+                    >
+                      <Heading size="sm" color={user.urgency ? 'red.600' : 'gray.700'}>
+                        {`${index + 1}. ${user.name}`}
+                      </Heading>
+                      <Text fontSize="sm">
+                        <strong>Status:</strong> {user.status}
+                      </Text>
+                      <Text fontSize="sm">
+                        <strong>Activities:</strong> {user.activities.join(', ')}
+                      </Text>
+                      <Text fontSize="sm">
+                        <strong>Urgency:</strong> {user.urgency ? 'Yes' : 'No'}
+                      </Text>
+                      <Text fontSize="sm">
+                        <strong>Estimated Wait Time:</strong> {calculateWaitTime(index)} mins
+                      </Text>
+                      <Button
+                        size="sm"
+                        colorScheme="blue"
+                        mt={2}
+                        onClick={() => markAsUsing(user._id)}
+                      >
+                        Mark as Using
+                      </Button>
+                      <Button
+                        size="sm"
+                        colorScheme="red"
+                        mt={2}
+                        ml={2}
+                        onClick={() => removeUser(user._id)}
+                      >
+                        Remove
+                      </Button>
+                    </Box>
+                  ))}
+              </VStack>
+            )}
+          </Box>
         </VStack>
       </Box>
     </ChakraProvider>
