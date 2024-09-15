@@ -38,8 +38,6 @@ const ACTIVITIES: Activity[] = [
   { id: 'misc', label: 'Miscellaneous (5 min)', duration: 5 },
 ];
 
-const MAX_WAIT_TIME = 20 * 60 * 1000; // 20 minutes in milliseconds
-
 export default function WaitlistForm() {
   const [name, setName] = useState<string>('');
   const [activities, setActivities] = useState<string[]>([]);
