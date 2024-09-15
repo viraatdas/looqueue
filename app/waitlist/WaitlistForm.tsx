@@ -13,6 +13,7 @@ import {
   CheckboxGroup,
   ChakraProvider,
 } from '@chakra-ui/react';
+import { s } from 'framer-motion/client';
 
 type Activity = {
   id: string;
@@ -98,10 +99,12 @@ export default function WaitlistForm() {
 
     try {
       const timestamp = Date.now(); // Current timestamp for the user entry
+      const status = "waiting";
+      
       const response = await fetch('/api/user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, activities, urgency, timestamp }), // Removed status
+        body: JSON.stringify({ name, activities, urgency, timestamp, status }), // Removed status
       });
       if (!response.ok) throw new Error('Failed to submit user data');
       toast({
@@ -160,9 +163,22 @@ export default function WaitlistForm() {
     }
   };
 
-  // Mark user as "Using"
+  // Mark user as "Using" and remove any previous user marked as "using"
   const markAsUsing = async (id: string) => {
     try {
+      // Find the current user marked as "using"
+      const currentUserUsing = users.find(user => user.status === 'using');
+
+      // Remove the current user marked as "using"
+      if (currentUserUsing) {
+        await fetch(`/api/user`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: currentUserUsing._id }),  // Remove the current user
+        });
+      }
+
+      // Mark the new user as "using"
       const response = await fetch(`/api/user`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -177,7 +193,7 @@ export default function WaitlistForm() {
         duration: 3000,
         isClosable: true,
       });
-      fetchUsers();
+      fetchUsers(); // Refresh the users list
     } catch (error) {
       console.error('Error updating user:', error);
       toast({
@@ -189,6 +205,7 @@ export default function WaitlistForm() {
       });
     }
   };
+
 
   // Calculate the estimated wait time for each user
   const calculateWaitTime = (index: number) => {
@@ -203,6 +220,34 @@ export default function WaitlistForm() {
       });
     }
     return waitTime;
+  };
+
+  // Update the sorting logic so that:
+  // 1. 'using' user is always on top
+  // 2. 'urgent' users are next
+  // 3. 'waiting' users are last
+  const sortedUsers = users
+  .sort((a, b) => {
+    if (a.status === 'using') return -1; // 'using' should be first
+    if (b.status === 'using') return 1;
+    if (a.urgency && !b.urgency) return -1; // 'urgent' comes after 'using'
+    if (!a.urgency && b.urgency) return 1;
+    return a.timestamp - b.timestamp; // Otherwise, sort by timestamp
+  });
+
+
+  // Function to get the background color based on user status
+  const getBackgroundColor = (user: User) => {
+    if (user.status === 'using') return 'green.50'; // Go (Soft Green)
+    if (user.urgency) return 'red.50'; // Urgent (Soft Red)
+    return 'gray.50'; // Waiting (Soft Gray)
+  };
+
+  // Function to get the border color based on user status
+  const getBorderColor = (user: User) => {
+    if (user.status === 'using') return 'green.300'; // Go (Medium Green)
+    if (user.urgency) return 'red.300'; // Urgent (Medium Red)
+    return 'gray.300'; // Waiting (Medium Gray)
   };
 
   return (
@@ -255,16 +300,14 @@ export default function WaitlistForm() {
               <Text>No one is currently in the queue.</Text>
             ) : (
               <VStack align="stretch" spacing={4}>
-                {users
-                  .sort((a, b) => b.urgency - a.urgency || a.timestamp - b.timestamp)
-                  .map((user, index) => (
+                {sortedUsers.map((user, index) => (
                     <Box
                       key={user._id}
                       p={4}
                       borderWidth={1}
                       borderRadius="md"
-                      bg={user.urgency ? 'red.100' : 'gray.100'}
-                      borderColor={user.urgency ? 'red.400' : 'gray.400'}
+                      bg={getBackgroundColor(user)}
+                      borderColor={getBorderColor(user)}
                       boxShadow="sm"
                     >
                       <Heading size="sm" color={user.urgency ? 'red.600' : 'gray.700'}>
