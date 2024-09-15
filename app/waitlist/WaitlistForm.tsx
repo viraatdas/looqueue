@@ -1,9 +1,7 @@
-// app/waitlist/WaitlistForm.tsx
-"use client"; // Add this to make it a Client Component
+"use client";
 
 import React, { useState, useEffect, FormEvent } from 'react';
 import {
-  ChakraProvider,
   Box,
   VStack,
   Heading,
@@ -13,27 +11,32 @@ import {
   Button,
   useToast,
   CheckboxGroup,
+  ChakraProvider,
 } from '@chakra-ui/react';
 
 type Activity = {
   id: string;
   label: string;
+  duration: number; // Time in minutes for each activity
 };
 
 type User = {
   name: string;
   status: string;
-  activities: string;
+  activities: string[];
   urgency: boolean;
+  timestamp: number; // Timestamp of when user was added
 };
 
 const ACTIVITIES: Activity[] = [
-  { id: 'number1', label: 'Number 1 (1 min)' },
-  { id: 'number2', label: 'Number 2 (4 min)' },
-  { id: 'shave', label: 'Shave (3 min)' },
-  { id: 'shower', label: 'Shower (15 min)' },
-  { id: 'misc', label: 'Miscellaneous (5 min)' },
+  { id: 'number1', label: 'Number 1 (1 min)', duration: 1 },
+  { id: 'number2', label: 'Number 2 (4 min)', duration: 4 },
+  { id: 'shave', label: 'Shave (3 min)', duration: 3 },
+  { id: 'shower', label: 'Shower (15 min)', duration: 15 },
+  { id: 'misc', label: 'Miscellaneous (5 min)', duration: 5 },
 ];
+
+const MAX_WAIT_TIME = 20 * 60 * 1000; // 20 minutes in milliseconds
 
 export default function WaitlistForm() {
   const [name, setName] = useState<string>('');
@@ -47,11 +50,13 @@ export default function WaitlistForm() {
     fetchUsers();
   }, []);
 
+  // Fetch users and handle dropping old users
   const fetchUsers = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/users');
+      const response = await fetch('/api/users');
       if (!response.ok) throw new Error('Failed to fetch users');
       const data: User[] = await response.json();
+
       setUsers(data);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -67,11 +72,37 @@ export default function WaitlistForm() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    // Inside handleSubmit
+    if (!name || activities.length === 0) {
+      toast({
+        title: 'Error',
+        description: !name ? 'Name cannot be empty' : 'Please select at least one activity',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+
+    if (users.some(user => user.name === name)) {
+      toast({
+        title: 'Error',
+        description: 'This person is already in the queue',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
     try {
-      const response = await fetch('http://localhost:3001/api/user', {
+      const timestamp = Date.now(); // Current timestamp for the user entry
+      const response = await fetch('/api/user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, status, activities, urgency }),
+        body: JSON.stringify({ name, status, activities, urgency, timestamp }),
       });
       if (!response.ok) throw new Error('Failed to submit user data');
       toast({
@@ -96,6 +127,21 @@ export default function WaitlistForm() {
         isClosable: true,
       });
     }
+  };
+
+  // Calculate the estimated wait time for each user
+  const calculateWaitTime = (index: number) => {
+    let waitTime = 0;
+    for (let i = 0; i < index; i++) {
+      const user = users[i];
+      user.activities.forEach(activity => {
+        const activityObj = ACTIVITIES.find(a => a.id === activity);
+        if (activityObj) {
+          waitTime += activityObj.duration;
+        }
+      });
+    }
+    return waitTime;
   };
 
   return (
@@ -150,21 +196,44 @@ export default function WaitlistForm() {
             </VStack>
           </form>
           <Box>
-            <Heading size="md">Current Queue</Heading>
-            {users.length === 0 ? (
-              <Text>No one is currently in the queue.</Text>
-            ) : (
-              <VStack align="stretch">
-                {users.map((user, index) => (
-                  <Text key={index}>
-                    {`${index + 1}. ${user.name} - ${user.status} - ${
-                      JSON.parse(user.activities).join(', ')
-                    }${user.urgency ? ' (Urgent)' : ''}`}
-                  </Text>
-                ))}
-              </VStack>
-            )}
+  <Heading size="md" mb={4}>Current Queue</Heading>
+  {users.length === 0 ? (
+    <Text>No one is currently in the queue.</Text>
+  ) : (
+    <VStack align="stretch" spacing={4}>
+      {users
+        .sort((a, b) => b.urgency - a.urgency || a.timestamp - b.timestamp)
+        .map((user, index) => (
+          <Box
+            key={index}
+            p={4}
+            borderWidth={1}
+            borderRadius="md"
+            bg={user.urgency ? 'red.100' : 'gray.100'}
+            borderColor={user.urgency ? 'red.400' : 'gray.400'}
+            boxShadow="sm"
+          >
+            <Heading size="sm" color={user.urgency ? 'red.600' : 'gray.700'}>
+              {`${index + 1}. ${user.name}`}
+            </Heading>
+            <Text fontSize="sm">
+              <strong>Status:</strong> {user.status}
+            </Text>
+            <Text fontSize="sm">
+              <strong>Activities:</strong> {user.activities.join(', ')}
+            </Text>
+            <Text fontSize="sm">
+              <strong>Urgency:</strong> {user.urgency ? 'Yes' : 'No'}
+            </Text>
+            <Text fontSize="sm">
+              <strong>Estimated Wait Time:</strong> {calculateWaitTime(index)} mins
+            </Text>
           </Box>
+        ))}
+    </VStack>
+  )}
+</Box>
+
         </VStack>
       </Box>
     </ChakraProvider>
