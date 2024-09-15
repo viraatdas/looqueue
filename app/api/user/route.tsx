@@ -17,7 +17,8 @@ export async function POST(request: Request) {
     await newUser.save(); // Save the user to the database
     return NextResponse.json(newUser, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ message: 'Error adding user', error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: 'Error adding user', error: errorMessage }, { status: 500 });
   }
 }
 
@@ -38,7 +39,8 @@ export async function DELETE(request: Request) {
     }
     return NextResponse.json({ message: 'User deleted successfully' }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ message: 'Error deleting user', error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: 'Error deleting user', error: errorMessage }, { status: 500 });
   }
 }
 
@@ -59,7 +61,8 @@ export async function PUT(request: Request) {
     }
     return NextResponse.json({ message: 'User status updated', user }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ message: 'Error updating user', error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: 'Error updating user', error: errorMessage }, { status: 500 });
   }
 }
 
@@ -80,6 +83,7 @@ export async function GET() {
 
     return NextResponse.json(users);
   } catch (error) {
-    return NextResponse.json({ message: 'Error fetching users', error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: 'Error fetching users', error: errorMessage }, { status: 500 });
   }
 }

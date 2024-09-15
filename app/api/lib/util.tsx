@@ -6,10 +6,10 @@ const mongoUri = process.env.MONGO_URI;
 // Connect to MongoDB
 export const connectToDatabase = async () => {
   if (!mongoose.connections[0].readyState) {
-    await mongoose.connect(mongoUri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    if (!mongoUri) {
+      throw new Error("MONGO_URI is not defined");
+    }
+    await mongoose.connect(mongoUri);
   }
 };
 

@@ -26,8 +26,10 @@ export async function GET() {
       return NextResponse.json({ message: 'No users to remove.' });
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
     return NextResponse.json(
-      { message: 'Error cleaning up users', error: error.message },
+      { message: 'Error cleaning up users', error: errorMessage },
       { status: 500 }
     );
   }
