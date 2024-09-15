@@ -54,3 +54,22 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ message: 'Error deleting user' }, { status: 500 });
   }
 }
+
+// PUT: Update a user by ID (to mark as "using")
+export async function PUT(request: Request) {
+  const { id, status } = await request.json();  // Extract id and status from request body
+
+  if (!id || !status) {
+    return NextResponse.json({ message: 'User ID and status are required' }, { status: 400 });
+  }
+
+  try {
+    const user = await User.findByIdAndUpdate(id, { status }, { new: true }); // Update status
+    if (!user) {
+      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    }
+    return NextResponse.json({ message: 'User status updated', user }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ message: 'Error updating user' }, { status: 500 });
+  }
+}

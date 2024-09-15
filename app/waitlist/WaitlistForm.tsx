@@ -165,11 +165,12 @@ export default function WaitlistForm() {
   // Mark user as "Using"
   const markAsUsing = async (id: string) => {
     try {
-      const response = await fetch(`/api/user/${id}`, {
+      const response = await fetch(`/api/user`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'using' }),
+        body: JSON.stringify({ id, status: 'using' }),  
       });
+
       if (!response.ok) throw new Error('Failed to update user');
       toast({
         title: 'User Updated',
