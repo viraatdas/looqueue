@@ -41,7 +41,6 @@ const MAX_WAIT_TIME = 20 * 60 * 1000; // 20 minutes in milliseconds
 
 export default function WaitlistForm() {
   const [name, setName] = useState<string>('');
-  const [status, setStatus] = useState<string>('');
   const [activities, setActivities] = useState<string[]>([]);
   const [urgency, setUrgency] = useState<boolean>(false);
   const [users, setUsers] = useState<User[]>([]);
@@ -102,7 +101,7 @@ export default function WaitlistForm() {
       const response = await fetch('/api/user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, status, activities, urgency, timestamp }),
+        body: JSON.stringify({ name, activities, urgency, timestamp }), // Removed status
       });
       if (!response.ok) throw new Error('Failed to submit user data');
       toast({
@@ -113,7 +112,6 @@ export default function WaitlistForm() {
         isClosable: true,
       });
       setName('');
-      setStatus('');
       setActivities([]);
       setUrgency(false);
       fetchUsers();
@@ -225,15 +223,6 @@ export default function WaitlistForm() {
                 <option value="Shihao">Shihao</option>
                 <option value="Viraat">Viraat</option>
               </Select>
-              <Select
-                placeholder="Select your status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option value="waiting">Waiting</option>
-                <option value="using">Using</option>
-                <option value="done">Done</option>
-              </Select>
               <CheckboxGroup
                 colorScheme="blue"
                 value={activities}
@@ -254,7 +243,7 @@ export default function WaitlistForm() {
                 Urgent (e.g., late for appointment)
               </Checkbox>
               <Button type="submit" colorScheme="blue">
-                Submit
+                Add to Waitlist
               </Button>
             </VStack>
           </form>
