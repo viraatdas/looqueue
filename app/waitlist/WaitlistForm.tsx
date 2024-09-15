@@ -13,7 +13,6 @@ import {
   CheckboxGroup,
   ChakraProvider,
 } from '@chakra-ui/react';
-import { s } from 'framer-motion/client';
 
 type Activity = {
   id: string;
